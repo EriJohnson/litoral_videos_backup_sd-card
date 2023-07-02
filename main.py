@@ -4,6 +4,7 @@ import datetime
 import msvcrt
 import psutil
 import locale
+import pyperclip
 from tqdm import tqdm
 
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -51,7 +52,7 @@ def write_message_file(date, tour_name, folder_path):
 def format_participants_text(pasted_text):
     participants = []
     lines = pasted_text.split("[")
-
+    
     for line in lines:
         if line.strip():
             name_start = line.find(":", line.find(":") + 1) + 2
@@ -122,7 +123,13 @@ def get_user_input():
 
     participants_text = input("Cole o texto com os participantes: ")
     participants = format_participants_text(participants_text)
-    
+
+    formatted_date = date.strftime("%d de %B de %Y").lstrip("0").upper()
+    tour_name = tour_name.upper()
+    guide_name = guide_name.upper()
+
+    clipboard_text = f"{formatted_date} - {tour_name} - {guide_name}"
+    pyperclip.copy(clipboard_text)
 
     return date, guide_name, tour_name, participants
 

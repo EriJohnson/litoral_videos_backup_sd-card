@@ -43,22 +43,20 @@ def create_folder_structure(date, guide_name, tour_name, base_path):
     return folder_path, footage_path, proxy_path
 
 def write_message_file(date, tour_name, folder_path):
-    formatted_date = date.strftime("%d de %B de %Y")
-    message = f"*Litoral Vídeos* 📹🏖☀😎\n\nOlá!\n\nSegue, o link do YouTube com a filmagem do seu passeio de *{tour_name}* do dia {formatted_date}:\n\n[LINK DO VÍDEO]\n\nAqui também vai um link com as imagens aéreas do Ceará que separamos para vocês:\n\nhttps://youtu.be/4C7cDVfsGf4\n\nObrigado pela sua visita e aproveite a filmagem!\n\nQualquer dúvida estamos à disposição"
+    formatted_date = date.strftime("%d de %B de %Y").lstrip("0").upper()
+    message = f"*Litoral Vídeos* 📹🏖☀😎\n\nOlá!\n\nSegue, o link do YouTube com a filmagem do seu passeio de *{tour_name}* do dia {formatted_date}:\n\n[LINK DO VÍDEO]\n\nAqui também vai um link com as imagens aéreas do Ceará que separamos para vocês:\n\nhttps://youtu.be/4C7cDVfsGf4\n\nObrigado pela sua visita e aproveite a filmagem!\n\nQualquer dúvida estamos à disposição."
     file_path = os.path.join(folder_path, "message.txt")
     with open(file_path, "w", encoding='utf-8') as file:
         file.write(message)
 
 def format_participants_text(pasted_text):
+    
     participants = []
     lines = pasted_text.split("[")
-    
     for line in lines:
         if line.strip():
-            name_start = line.find(":", line.find(":") + 1) + 2
-            name_end = line.rfind("[")
-            name = line[name_start:name_end].strip().title()
-            participants.append(name)
+            name = line.split(":")[-1].strip()
+            participants.append(name.title())
     return participants
 
 def write_participants_file(participants, folder_path):

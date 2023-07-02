@@ -146,8 +146,8 @@ try:
 
     # Copy files from SD card
     files_to_copy = [file for file in os.listdir(sd_card_path) if os.path.isfile(os.path.join(sd_card_path, file))]
-    destination_folder = f"bkp - {datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-    destination_path = os.path.join(os.getcwd(), destination_folder)
+    destination_folder = f"bkp - {datetime.datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}"
+    destination_path = os.path.join("D:\\", destination_folder)
     os.makedirs(destination_path, exist_ok=True)
     print("Iniciando backup do cartão:")
     print("")

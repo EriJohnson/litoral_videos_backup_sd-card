@@ -10,15 +10,38 @@ from tqdm import tqdm
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
 def copy_files(source, destination):
-    total_files = len(source)
-    total_size = sum(os.path.getsize(file) for file in source)
-    print(f"Total files: {total_files}")
-    print(f"Total size: {total_size} bytes")
-    print("Copying files:")
+    total_files = 0
+    total_size = 0
+
+    # Percorre todos os arquivos e diretórios de origem
+    for item in source:
+        if os.path.isfile(item):
+            total_files += 1
+            total_size += os.path.getsize(item)
+        elif os.path.isdir(item):
+            for root, _, filenames in os.walk(item):
+                for filename in filenames:
+                    file_path = os.path.join(root, filename)
+                    total_files += 1
+                    total_size += os.path.getsize(file_path)
+
+    print(f"Total de arquivos a copiar: {total_files}")
+    print(f"Tamanho total: {total_size} bytes")
+    print("Copiando arquivos:")
+
+    # Copia os arquivos e diretórios de origem para o destino
     with tqdm(total=total_size, unit='B', unit_scale=True, ncols=80) as progress_bar:
-        for file in source:
-            shutil.copy(file, destination)
-            progress_bar.update(os.path.getsize(file))
+        for item in source:
+            if os.path.isfile(item):
+                shutil.copy(item, destination)
+                progress_bar.update(os.path.getsize(item))
+            elif os.path.isdir(item):
+                for root, _, filenames in os.walk(item):
+                    for filename in filenames:
+                        file_path = os.path.join(root, filename)
+                        shutil.copy(file_path, destination)
+                        progress_bar.update(os.path.getsize(file_path))
+
     print("Copying files: Done")
     print("")
 
@@ -44,7 +67,7 @@ def create_folder_structure(date, guide_name, tour_name, base_path):
 
 def write_message_file(date, tour_name, folder_path):
     formatted_date = date.strftime("%d de %B de %Y").lstrip("0").upper()
-    message = f"*Litoral Vídeos* 📹🏖☀😎\n\nOlá!\n\nSegue, o link do YouTube com a filmagem do seu passeio de *{tour_name}* do dia {formatted_date}:\n\n[LINK DO VÍDEO]\n\nAqui também vai um link com as imagens aéreas do Ceará que separamos para vocês:\n\nhttps://youtu.be/4C7cDVfsGf4\n\nObrigado pela sua visita e aproveite a filmagem!\n\nQualquer dúvida estamos à disposição."
+    message = f"*Litoral Vídeos* 📹🏖☀😎\n\nOlá!\n\nSegue, o link do YouTube com a filmagem do seu passeio de *{tour_name}* do dia *{formatted_date}*:\n\n[LINK DO VÍDEO]\n\nAqui também vai um link com as imagens aéreas do Ceará que separamos para vocês:\n\nhttps://youtu.be/4C7cDVfsGf4\n\nObrigado pela sua visita e aproveite a filmagem!\n\nQualquer dúvida estamos à disposição."
     file_path = os.path.join(folder_path, "message.txt")
     with open(file_path, "w", encoding='utf-8') as file:
         file.write(message)
@@ -68,9 +91,17 @@ def write_participants_file(participants, folder_path):
 def get_sd_card_path():
     drives = psutil.disk_partitions(all=True)
     for drive in drives:
-        if drive.fstype == 'exfat' or drive.fstype == 'fat32' or drive.fstype == 'FAT':
+        if drive.fstype.lower() == 'fat32' or drive.fstype.lower() == 'fat':
             return drive.mountpoint
     raise ValueError("Nenhum cartão SD detectado")
+
+def get_files_to_copy(sd_card_path):
+    files_to_copy = []
+    for root, _, filenames in os.walk(sd_card_path):
+        for filename in filenames:
+            file_path = os.path.join(root, filename)
+            files_to_copy.append(file_path)
+    return files_to_copy
 
 def get_user_input():
     print("De que dia é a filmagem?")
@@ -119,7 +150,14 @@ def get_user_input():
         raise ValueError("Opção inválida")
     os.system("cls")
 
-    participants_text = input("Cole o texto com os participantes: ")
+    print("Cole o texto com os participantes e pressione Enter quando terminar:")
+    participants_text = ""
+    while True:
+        line = input()
+        if line.lower() == "sair" or line == "":
+            break
+        participants_text += line + "\n"
+
     participants = format_participants_text(participants_text)
 
     formatted_date = date.strftime("%d de %B de %Y").lstrip("0").upper()
@@ -144,27 +182,27 @@ try:
     # Get user input
     date, guide_name, tour_name, participants = get_user_input()
 
-    # Copy files from SD card
-    files_to_copy = [file for file in os.listdir(sd_card_path) if os.path.isfile(os.path.join(sd_card_path, file))]
-    destination_folder = f"bkp - {datetime.datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}"
+     # Copy files from SD card
+    files_to_copy = get_files_to_copy(sd_card_path)
+    destination_folder = f"bkp-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
     destination_path = os.path.join("D:\\", destination_folder)
     os.makedirs(destination_path, exist_ok=True)
-    print("Iniciando backup do cartão:")
+    print("INICIANDO BACKUP DO CARTÃO:")
     print("")
 
-    copy_files([os.path.join(sd_card_path, file) for file in files_to_copy], destination_path)
+    copy_files(files_to_copy, destination_path)
 
     # Create folder structure
     base_path = r"D:\ARQUIVO"
     folder_path, footage_path, proxy_path = create_folder_structure(date, guide_name, tour_name, base_path)
 
     # Copy files
-    print("Iniciando cópia dos arquivos bruto:")
+    print("INICIANDO CÓPIA DOS ARQUIVOS BRUTO:")
     print("")
 
     copy_files([os.path.join(destination_path, file) for file in files_to_copy if file.endswith(".MP4")], footage_path)
 
-    print("Iniciando cópia dos arquivos proxy:")
+    print("INICIANDO CÓPIA DOS ARQUIVOS DE MÍDIAS PROXY:")
     print("")
     copy_files([os.path.join(destination_path, file) for file in files_to_copy if file.endswith(".LRV")], proxy_path)
 
